@@ -152,25 +152,35 @@
   .gfxb i { font-style: normal; color: #ffd98a; }
   #gfxM { margin-left: auto; align-self: center; font-size: 13px; padding: 5px 12px; }
   /* after "ลงสนาม": the two maps, big and plain */
-  #mapPick { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2.4vh, 18px); padding: calc(10px + var(--sat)) calc(14px + var(--sar)) calc(10px + var(--sab)) calc(14px + var(--sal, 0px)); background: rgba(8,5,2,0.88); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: mpIn .18s ease-out; }
+  #mapPick, #gfxPick { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2.4vh, 18px); padding: calc(10px + var(--sat)) calc(14px + var(--sar)) calc(10px + var(--sab)) calc(14px + var(--sal, 0px)); background: rgba(8,5,2,0.88); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: mpIn .18s ease-out; }
   @keyframes mpIn { from { opacity: 0; } to { opacity: 1; } }
-  #mapPick h2 { margin: 0; font-size: clamp(22px, 6vh, 38px); font-weight: 800; color: #ffd98a; text-shadow: 0 2px 0 #3a2208, 0 0 18px rgba(255,200,90,0.35); letter-spacing: 0.02em; }
-  #mapPick .two { display: flex; gap: clamp(10px, 2.5vw, 26px); width: min(100%, 920px); flex: 0 1 auto; min-height: 0; align-items: stretch; }
-  #mapPick .mp { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1.4vh, 10px); padding: clamp(8px, 2vh, 16px) clamp(8px, 1.6vw, 18px) clamp(10px, 2.4vh, 18px); font: inherit; color: #f3e6c8; cursor: pointer; touch-action: manipulation; border-radius: 20px; border: 3px solid #a8853e; background: linear-gradient(170deg, #3a2812, #160e05 70%); box-shadow: 0 8px 26px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,217,138,0.15); transition: transform .12s, border-color .12s, box-shadow .12s; }
-  #mapPick .mp.last { border-color: #ffd98a; box-shadow: 0 8px 26px rgba(0,0,0,0.6), 0 0 22px rgba(255,217,138,0.4); }
-  #mapPick .mp:active { transform: scale(0.97); border-color: #fff; }
-  #mapPick .mp .pic { width: 100%; height: clamp(70px, 30vh, 190px); display: grid; place-items: center; background: #1c3a44; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,217,138,0.35); }
-  #mapPick .mp .pic { position: relative; }
-  #mapPick .mp canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-  #mapPick .mp .nm { font-size: clamp(22px, 7vh, 44px); font-weight: 800; line-height: 1.05; color: #ffe9b0; text-shadow: 0 2px 0 #2a1606; white-space: nowrap; }
-  #mapPick .mp .ln { display: flex; align-items: baseline; gap: 8px; font-size: clamp(16px, 4.6vh, 28px); font-weight: 700; color: #ffd35a; white-space: nowrap; }
-  #mapPick .mp .ln b { font-size: 1.9em; line-height: 0.9; color: #fff3c4; text-shadow: 0 0 14px rgba(255,210,100,0.6); }
-  #mapPick .mp .ds { font-size: clamp(11px, 2.8vh, 14px); opacity: 0.8; text-align: center; line-height: 1.3; }
-  #mapPick .mp .tag { font-size: 11px; font-weight: 600; color: #2a1606; background: #ffd98a; border-radius: 8px; padding: 0 8px; visibility: hidden; }
-  #mapPick .mp.last .tag { visibility: visible; }
-  #mapPick .cancel { font: inherit; font-size: 14px; color: #f3e6c8; background: rgba(16,10,5,0.8); border: 1px solid var(--line); border-radius: 10px; padding: 6px 22px; cursor: pointer; touch-action: manipulation; }
-  @media (max-height: 360px) { #mapPick .mp .ds { display: none; } }
-  @media (orientation: portrait) { #mapPick .two { flex-direction: column; width: min(100%, 420px); } #mapPick .mp .pic { height: clamp(60px, 16vh, 150px); } }
+  #mapPick h2, #gfxPick h2 { margin: 0; font-size: clamp(22px, 6vh, 38px); font-weight: 800; color: #ffd98a; text-shadow: 0 2px 0 #3a2208, 0 0 18px rgba(255,200,90,0.35); letter-spacing: 0.02em; }
+  #mapPick .two, #gfxPick .two { display: flex; gap: clamp(10px, 2.5vw, 26px); width: min(100%, 920px); flex: 0 1 auto; min-height: 0; align-items: stretch; }
+  #mapPick .mp, #gfxPick .mp { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1.4vh, 10px); padding: clamp(8px, 2vh, 16px) clamp(8px, 1.6vw, 18px) clamp(10px, 2.4vh, 18px); font: inherit; color: #f3e6c8; cursor: pointer; touch-action: manipulation; border-radius: 20px; border: 3px solid #a8853e; background: linear-gradient(170deg, #3a2812, #160e05 70%); box-shadow: 0 8px 26px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,217,138,0.15); transition: transform .12s, border-color .12s, box-shadow .12s; }
+  #mapPick .mp.last, #gfxPick .mp.last { border-color: #ffd98a; box-shadow: 0 8px 26px rgba(0,0,0,0.6), 0 0 22px rgba(255,217,138,0.4); }
+  #mapPick .mp:active, #gfxPick .mp:active { transform: scale(0.97); border-color: #fff; }
+  #mapPick .mp .pic, #gfxPick .mp .pic { width: 100%; height: clamp(70px, 30vh, 190px); display: grid; place-items: center; background: #1c3a44; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,217,138,0.35); }
+  #mapPick .mp .pic, #gfxPick .mp .pic { position: relative; }
+  #mapPick .mp canvas, #gfxPick .mp canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  #mapPick .mp .nm, #gfxPick .mp .nm { font-size: clamp(22px, 7vh, 44px); font-weight: 800; line-height: 1.05; color: #ffe9b0; text-shadow: 0 2px 0 #2a1606; white-space: nowrap; }
+  #mapPick .mp .ln, #gfxPick .mp .ln { display: flex; align-items: baseline; gap: 8px; font-size: clamp(16px, 4.6vh, 28px); font-weight: 700; color: #ffd35a; white-space: nowrap; }
+  #mapPick .mp .ln b, #gfxPick .mp .ln b { font-size: 1.9em; line-height: 0.9; color: #fff3c4; text-shadow: 0 0 14px rgba(255,210,100,0.6); }
+  #mapPick .mp .ds, #gfxPick .mp .ds { font-size: clamp(11px, 2.8vh, 14px); opacity: 0.8; text-align: center; line-height: 1.3; }
+  #mapPick .mp .tag, #gfxPick .mp .tag { font-size: 11px; font-weight: 600; color: #2a1606; background: #ffd98a; border-radius: 8px; padding: 0 8px; visibility: hidden; }
+  #mapPick .mp.last .tag, #gfxPick .mp.last .tag { visibility: visible; }
+  #mapPick .cancel, #gfxPick .cancel { font: inherit; font-size: 14px; color: #f3e6c8; background: rgba(16,10,5,0.8); border: 1px solid var(--line); border-radius: 10px; padding: 6px 22px; cursor: pointer; touch-action: manipulation; }
+  @media (max-height: 360px) { #mapPick .mp .ds, #gfxPick .mp .ds { display: none; } }
+  .ver { align-self: center; font-size: 11.5px; font-weight: 600; color: #2a1606; background: #ffd98a; border-radius: 8px; padding: 1px 8px; margin-left: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  /* after the map: graphics quality, four big buttons */
+  #gfxPick .two { width: min(100%, 1000px); }
+  #gfxPick .mp { padding: clamp(8px, 2.2vh, 16px) clamp(6px, 1.2vw, 14px); justify-content: center; }
+  #gfxPick .mp .ic { font-size: clamp(26px, 9vh, 52px); line-height: 1; height: clamp(34px, 12vh, 70px); display: grid; place-items: center; }
+  #gfxPick .mp .ic canvas { position: static; width: clamp(34px, 12vh, 70px); height: clamp(34px, 12vh, 70px); image-rendering: auto; }
+  #gfxPick .mp[data-g="3"] .ic canvas { image-rendering: pixelated; }
+  #gfxPick .mp .nm { font-size: clamp(17px, 5.4vh, 30px); white-space: normal; text-align: center; }
+  #gfxPick .mp .ds { display: block !important; font-size: clamp(10.5px, 2.6vh, 13px); }
+  #gfxPick .mp .rec { font-size: 10.5px; color: #a8f0a0; }
+  @media (orientation: portrait) { #mapPick .two, #gfxPick .two { flex-direction: column; width: min(100%, 420px); } #mapPick .mp .pic, #gfxPick .mp .pic { height: clamp(60px, 16vh, 150px); } }
   .mapb { margin-left: auto; align-self: center; font: inherit; font-size: 13px; color: #f3e6c8; background: rgba(16,10,5,0.78); border: 1px solid #c9a55a; border-radius: 10px; padding: 5px 12px; white-space: nowrap; cursor: pointer; touch-action: manipulation; }
   .mapb i { font-style: normal; color: #ffd98a; }
   .brand .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -244,13 +254,14 @@
   #rot { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); background: rgba(16,10,5,0.85); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-size: 13px; pointer-events: none; display: none; }
   @media (orientation: portrait) { #rot { display: block; animation: fadeaway 5s forwards; } }
   @keyframes fadeaway { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
+  @media (orientation: portrait) { #gfxPick .two { display: grid; grid-template-columns: 1fr 1fr; width: min(100%, 460px); } }
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 
 <div id="menu">
-  <div class="brand"><span class="logo">ศึกหมู่บ้าน</span><span class="sub">เลือกนักรบ · <b>โหมดฝึกซ้อม</b></span><button id="gfxM" class="gfxb"></button></div>
+  <div class="brand"><span class="logo">ศึกหมู่บ้าน</span><span class="sub">เลือกนักรบ · <b>โหมดฝึกซ้อม</b></span><span id="ver" class="ver"></span><button id="gfxM" class="gfxb"></button></div>
   <div class="main">
     <div class="stage">
       <canvas id="pv"></canvas>
@@ -289,6 +300,16 @@
     <button class="mp" data-map="lane"><div class="pic"><canvas></canvas></div><span class="nm">แผนที่เล็ก</span><span class="ln"><b>1</b>เลน</span><span class="ds">เกาะยาวเลนเดียว ป่าโปร่ง · ป้อมฝั่งละ 2</span><span class="tag">เล่นล่าสุด</span></button>
   </div>
   <button class="cancel">‹ กลับ</button>
+</div>
+<div id="gfxPick" class="hidden mpk">
+  <h2>เลือกกราฟิก</h2>
+  <div class="two">
+    <button class="mp" data-g="0"><span class="ic"><canvas width="96" height="96"></canvas></span><span class="nm">คมชัดสูง</span><span class="ds">ภาพละเอียดเต็มจอ 60 เฟรม<br>มีเงาสะท้อนน้ำ หมอกเบลอ<br>สวยสุด แต่เครื่องร้อนสุด</span><span class="tag">ใช้ล่าสุด</span></button>
+    <button class="mp" data-g="1"><span class="ic"><canvas width="96" height="96"></canvas></span><span class="nm">ปกติ</span><span class="ds">ละเอียดพอดี 60 เฟรม<br>เอฟเฟกต์ครบ<br>เหมาะกับมือถือส่วนใหญ่</span><span class="tag">ใช้ล่าสุด</span></button>
+    <button class="mp" data-g="2"><span class="ic"><canvas width="96" height="96"></canvas></span><span class="nm">ประหยัดแบต</span><span class="ds">ภาพหยาบลงนิด 30 เฟรม<br>ปิดเงาน้ำและหมอกเบลอ<br>เครื่องเย็นลง แบตอยู่นาน</span><span class="tag">ใช้ล่าสุด</span></button>
+    <button class="mp" data-g="3"><span class="ic"><canvas width="96" height="96"></canvas></span><span class="nm">ไมโครพิกเซล</span><span class="ds">ภาพเม็ดพิกเซลแบบเกมยุคเก่า<br>30 เฟรม กินเครื่องน้อยที่สุด<br>สำหรับเครื่องเก่าหรือร้อนมาก</span><span class="tag">ใช้ล่าสุด</span></button>
+  </div>
+  <button class="cancel">‹ กลับไปเลือกแผนที่</button>
 </div>
 <div id="hud" class="hidden">
   <div id="joyZone"></div>

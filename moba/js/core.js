@@ -1,4 +1,6 @@
 'use strict';
+// shown on the menu; raised with every update
+const GAME_VERSION = '1.42';
 // ===== ศึกหมู่บ้าน MOBA — core: utilities, constants, heroes =====
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

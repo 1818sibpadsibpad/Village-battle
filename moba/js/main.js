@@ -576,7 +576,8 @@ window.addEventListener('keydown', (e) => {
   SFX.unlock();
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (state !== 'game') {
-    const open = !$('mapPick').classList.contains('hidden');
+    const open = !$('mapPick').classList.contains('hidden'), gopen = !$('gfxPick').classList.contains('hidden');
+    if (gopen) { if (e.key === 'Enter') pickGfx(gfx); else if (e.key === 'Escape') { $('gfxPick').classList.add('hidden'); openMapPick(); } else if (e.key >= '1' && e.key <= '4') pickGfx(+e.key - 1); return; }
     if (e.key === 'Enter') { if (open) pickMap(mapKind); else openMapPick(); }
     else if (open && e.key === 'Escape') closeMapPick();
     else if (open && (e.key === '1' || e.key === '3')) pickMap(e.key === '3' ? 'big' : 'lane');
@@ -733,8 +734,40 @@ function pickMap(kind) {
   if (state !== 'menu') return;
   closeMapPick();
   if (kind !== mapKind) setMap(kind);
+  openGfxPick();
+}
+// then the graphics, four big buttons, each with a line or two on what it costs
+function gfxIcon(cv2, i) {
+  const g = cv2.getContext('2d'), n = cv2.width;
+  g.clearRect(0, 0, n, n);
+  // a little landscape: sky, sun, hill, a palm; drawn coarser the lower the setting
+  const cell = [1, 2, 4, 12][i], m = n / cell;
+  const t = document.createElement('canvas'); t.width = t.height = Math.round(m); const q = t.getContext('2d'); q.scale(m / n, m / n);
+  const sky = q.createLinearGradient(0, 0, 0, n); sky.addColorStop(0, '#5aa0d8'); sky.addColorStop(1, '#cfe6f0');
+  q.fillStyle = sky; q.fillRect(0, 0, n, n);
+  q.fillStyle = '#ffd35a'; q.beginPath(); q.arc(n * 0.72, n * 0.3, n * 0.13, 0, TAU); q.fill();
+  q.fillStyle = '#5a8a3a'; q.beginPath(); q.moveTo(0, n * 0.75); q.quadraticCurveTo(n * 0.4, n * 0.48, n, n * 0.7); q.lineTo(n, n); q.lineTo(0, n); q.fill();
+  q.fillStyle = '#3e6a2a'; q.fillRect(0, n * 0.86, n, n * 0.14);
+  q.strokeStyle = '#7a5530'; q.lineWidth = n * 0.04; q.beginPath(); q.moveTo(n * 0.3, n * 0.86); q.quadraticCurveTo(n * 0.33, n * 0.6, n * 0.28, n * 0.38); q.stroke();
+  q.strokeStyle = '#2f7a2a'; q.lineWidth = n * 0.035; q.lineCap = 'round';
+  for (let k = 0; k < 6; k++) { const a = -Math.PI / 2 + (k - 2.5) * 0.55; q.beginPath(); q.moveTo(n * 0.28, n * 0.38); q.quadraticCurveTo(n * 0.28 + Math.cos(a) * n * 0.16, n * 0.38 + Math.sin(a) * n * 0.1, n * 0.28 + Math.cos(a) * n * 0.24, n * 0.38 + Math.sin(a) * n * 0.05 + n * 0.08); q.stroke(); }
+  g.imageSmoothingEnabled = i < 3; g.drawImage(t, 0, 0, n, n);
+  g.save(); g.globalCompositeOperation = 'destination-in'; g.beginPath(); g.arc(n / 2, n / 2, n / 2 - 1, 0, TAU); g.fill(); g.restore();
+}
+function openGfxPick() {
+  const el = $('gfxPick');
+  el.classList.remove('hidden');
+  el.querySelectorAll('.mp').forEach((b) => { const i = +b.dataset.g; b.classList.toggle('last', i === gfx); gfxIcon(b.querySelector('canvas'), i); });
+}
+function pickGfx(i) {
+  if (state !== 'menu') return;
+  $('gfxPick').classList.add('hidden');
+  if (i !== gfx) { gfx = i; try { localStorage.setItem('sb_gfx', gfx); } catch (e) { /* no storage */ } fogCv = tinyCv = null; resize(); showGfx(); }
   startGame();
 }
+$('gfxPick').querySelectorAll('.mp').forEach((b) => { b.onclick = () => pickGfx(+b.dataset.g); });
+$('gfxPick').querySelector('.cancel').onclick = () => { $('gfxPick').classList.add('hidden'); openMapPick(); };
+$('ver').textContent = 'เวอร์ชัน ' + GAME_VERSION;
 $('mapPick').querySelectorAll('.mp').forEach((b) => { b.onclick = () => pickMap(b.dataset.map); });
 $('mapPick').querySelector('.cancel').onclick = closeMapPick;
 $('back').onclick = backToMenu;
