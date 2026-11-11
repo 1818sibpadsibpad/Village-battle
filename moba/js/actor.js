@@ -588,7 +588,7 @@ function updateActor(a, dt, w, move) {
   a.ghosts = a.ghosts.filter((gh) => gh.t < 0.26);
   if (a.dead) { a.burn = null; a.deathT += dt; a.respawnT -= dt; a.moving = false; if (a.respawnT <= 0 && w.spawns) { if (a.creep) a.gone = true; else respawnActor(w, a); } return; }
   // on fire: 3 s of burning, a bite every half second; wading into water puts it out
-  if (a.burn) {
+  if (a.burn && typeof a.burn === 'object') {
     const b = a.burn;
     b.t -= dt; b.tick -= dt;
     if (Math.random() < 0.5) addFx(w, { k: 'embers', x: a.x + (Math.random() - 0.5) * 0.15, y: a.y, z: 0.3 + Math.random() * 0.4, t: 0, dur: 0.5, seed: Math.random() * 1e3, n: 2, dir: -Math.PI / 2, small: true });
@@ -604,8 +604,8 @@ function updateActor(a, dt, w, move) {
     const ep = w.spawns[a.team === 'red' ? 'blue' : 'red'];
     if (Math.hypot(a.x - ep.x, a.y - ep.y) < 1.15 && a.spawnShield <= 0) {
       const d = a.maxHp * 0.14 * dt;
-      a.hp -= d; a.burn = (a.burn || 0) + d; a.flash = Math.max(a.flash, 0.05);
-      if (a.burn > 40) { addFloater(w, a.x, a.y - 0.7, '-' + Math.round(a.burn), '#ffb070', 0.9); a.burn = 0; }
+      a.hp -= d; a.campDmg = (a.campDmg || 0) + d; a.flash = Math.max(a.flash, 0.05); // (not a.burn: that's the fire arrow's burning)
+      if (a.campDmg > 40) { addFloater(w, a.x, a.y - 0.7, '-' + Math.round(a.campDmg), '#ffb070', 0.9); a.campDmg = 0; }
       if (a.hp <= 0) killActor(w, a, null);
       if (a.dead) return;
     }
@@ -959,28 +959,11 @@ function drawGroundFx(g, w, k) {
       g.fillStyle = `rgba(176,156,112,${0.38 * (1 - u)})`;
       g.beginPath(); g.ellipse(x, y - r * 0.4 - u * k * 0.05, r, r * 0.7, 0, 0, TAU); g.fill();
     } else if (f.k === 'crack') {
-      // the ground split open: jagged cracks out from the middle, a dark scorch, fading slowly
+      // the ground broken by the axeman's landing: one of three looks, picked at random
       const [x, y] = w2s(f.x, f.y);
-      const al = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3, grow = easeOut(Math.min(1, (f.t / 0.14))), R = k * f.r * grow;
-      const r = mulberry32(Math.floor(f.seed));
-      g.save(); g.translate(x, y); g.scale(1, TILT);
-      const gr = g.createRadialGradient(0, 0, 0, 0, 0, R * 0.9);
-      gr.addColorStop(0, `rgba(40,26,14,${0.45 * al})`); gr.addColorStop(1, 'rgba(40,26,14,0)');
-      g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R * 0.9, 0, TAU); g.fill();
-      g.lineCap = 'round'; g.lineJoin = 'round';
-      const n = 9;
-      for (let i = 0; i < n; i++) {
-        let a = (i / n) * TAU + (r() - 0.5) * 0.5, px = 0, py = 0;
-        const L = R * (0.6 + r() * 0.4), segs = 4;
-        const pts = [[0, 0]];
-        for (let j = 1; j <= segs; j++) { a += (r() - 0.5) * 0.7; px += Math.cos(a) * L / segs; py += Math.sin(a) * L / segs; pts.push([px, py]); if (j === 2 && r() < 0.7) { const b = a + (r() < 0.5 ? 0.9 : -0.9); pts.push([px + Math.cos(b) * L * 0.25, py + Math.sin(b) * L * 0.25], [px, py]); } }
-        g.beginPath(); pts.forEach((p, j) => (j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
-        g.strokeStyle = `rgba(24,14,6,${0.85 * al})`; g.lineWidth = Math.max(1.2, k * 0.028); g.stroke();
-        g.strokeStyle = `rgba(210,180,130,${0.35 * al})`; g.lineWidth = Math.max(0.6, k * 0.008); g.stroke();
-      }
-      // lifted slabs round the rim
-      for (let i = 0; i < 7; i++) { const a = r() * TAU, d = R * (0.55 + r() * 0.4), w2 = k * (0.05 + r() * 0.05); g.fillStyle = `rgba(92,70,44,${0.8 * al})`; g.beginPath(); g.moveTo(Math.cos(a) * d - w2, Math.sin(a) * d); g.lineTo(Math.cos(a) * d, Math.sin(a) * d - w2 * 1.3); g.lineTo(Math.cos(a) * d + w2, Math.sin(a) * d); g.closePath(); g.fill(); }
-      g.restore();
+      const al = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3, grow = easeOut(Math.min(1, f.t / 0.12)), R = k * f.r * grow;
+      if (f.v == null) f.v = Math.floor((f.seed * 7.31) % 3);
+      drawCrack(g, x, y, R, k, al, f.v, f.seed);
     } else if (f.k === 'groundArc') {
       const [x, y] = w2s(f.x, f.y);
       const R = f.r * k * (0.8 + 0.4 * easeOut(u));
@@ -1360,6 +1343,97 @@ function creepPose(a) {
   if (c) { o.act = Object.create(c); o.act.t = Math.min(c.dur, (Math.floor(c.t * 10) + 0.5) / 10); }
   a._pk = key;
   return (a._P = poseOf(o));
+}
+// jagged line from (x0,y0) heading `a` for L, in n kinks; returns the points
+function jag(r, x0, y0, a, L, n, wob) {
+  const pts = [[x0, y0]]; let x = x0, y = y0;
+  for (let i = 1; i <= n; i++) { a += (r() - 0.5) * wob; x += Math.cos(a) * L / n; y += Math.sin(a) * L / n; pts.push([x, y]); }
+  return pts;
+}
+function strokeCrack(g, pts, w0, al, k) {
+  // a crack: dark and wide at its root, thinning to nothing, a pale lip along one side
+  for (let i = 1; i < pts.length; i++) {
+    const f = 1 - (i - 1) / (pts.length - 1);
+    g.beginPath(); g.moveTo(pts[i - 1][0], pts[i - 1][1]); g.lineTo(pts[i][0], pts[i][1]);
+    g.strokeStyle = `rgba(18,10,4,${0.9 * al})`; g.lineWidth = Math.max(0.8, w0 * (0.25 + 0.75 * f)); g.stroke();
+  }
+  g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0] + k * 0.006, p[1] - k * 0.006) : g.moveTo(p[0] + k * 0.006, p[1] - k * 0.006)));
+  g.strokeStyle = `rgba(222,196,150,${0.32 * al})`; g.lineWidth = Math.max(0.5, w0 * 0.22); g.stroke();
+}
+function drawCrack(g, x, y, R, k, al, v, seed) {
+  const r = mulberry32(Math.floor(seed) + v * 101);
+  g.save(); g.translate(x, y); g.scale(1, TILT); g.lineCap = 'round'; g.lineJoin = 'round';
+  // the scorch of the blow under all three
+  const gr = g.createRadialGradient(0, 0, 0, 0, 0, R);
+  gr.addColorStop(0, `rgba(38,24,12,${0.5 * al})`); gr.addColorStop(0.6, `rgba(52,36,20,${0.22 * al})`); gr.addColorStop(1, 'rgba(52,36,20,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill();
+  const W = Math.max(1.4, k * 0.032);
+  if (v === 0) {
+    // 1 — the spider's web: spokes out from the centre, rings of cracks crossing them
+    const n = 9 + Math.floor(r() * 3), spokes = [];
+    for (let i = 0; i < n; i++) { const a = (i / n) * TAU + (r() - 0.5) * 0.35; const pts = jag(r, 0, 0, a, R * (0.75 + r() * 0.25), 5, 0.5); spokes.push(pts); strokeCrack(g, pts, W, al, k); }
+    for (const ring of [0.3, 0.55, 0.8]) {
+      for (let i = 0; i < n; i++) {
+        if (r() < 0.25) continue;
+        const A = spokes[i], B = spokes[(i + 1) % n], ia = Math.min(A.length - 1, Math.round(ring * 5)), ib = Math.min(B.length - 1, Math.round(ring * 5));
+        const mx = (A[ia][0] + B[ib][0]) / 2 * (0.9 + r() * 0.15), my = (A[ia][1] + B[ib][1]) / 2 * (0.9 + r() * 0.15);
+        strokeCrack(g, [A[ia], [mx, my], B[ib]], W * (0.7 - ring * 0.35), al, k);
+      }
+    }
+    // the pit at the heart
+    g.fillStyle = `rgba(14,8,3,${0.8 * al})`; g.beginPath();
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU, rr = R * (0.08 + r() * 0.05); g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    g.closePath(); g.fill();
+  } else if (v === 1) {
+    // 2 — the crater: a sunken bowl, its floor shattered into plates, slabs heaved up and tipped round the rim
+    const bowl = g.createRadialGradient(-R * 0.1, -R * 0.12, R * 0.05, 0, 0, R * 0.62);
+    bowl.addColorStop(0, `rgba(30,18,8,${0.75 * al})`); bowl.addColorStop(0.8, `rgba(70,48,26,${0.55 * al})`); bowl.addColorStop(1, `rgba(120,92,58,${0.4 * al})`);
+    g.fillStyle = bowl; g.beginPath(); g.arc(0, 0, R * 0.62, 0, TAU); g.fill();
+    // plates of the floor
+    const m = 7;
+    for (let i = 0; i < m; i++) { const a = (i / m) * TAU + r() * 0.3; strokeCrack(g, jag(r, 0, 0, a, R * 0.6, 3, 0.4), W * 0.75, al, k); }
+    // the broken lip, and slabs thrown up on it, lit on the top edge
+    g.strokeStyle = `rgba(20,12,5,${0.85 * al})`; g.lineWidth = W * 0.8; g.beginPath();
+    for (let i = 0; i <= 24; i++) { const a = (i / 24) * TAU, rr = R * (0.6 + (r() - 0.5) * 0.07); i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    g.stroke();
+    for (let i = 0; i < 11; i++) {
+      const a = (i / 11) * TAU + (r() - 0.5) * 0.4, d = R * (0.62 + r() * 0.2), sz = R * (0.09 + r() * 0.08), tilt = a + (r() - 0.5);
+      const cx = Math.cos(a) * d, cy = Math.sin(a) * d;
+      g.save(); g.translate(cx, cy); g.rotate(tilt);
+      g.beginPath(); g.moveTo(-sz, sz * 0.4); g.lineTo(-sz * 0.6, -sz * 0.5); g.lineTo(sz * 0.7, -sz * 0.6); g.lineTo(sz, sz * 0.3); g.closePath();
+      g.fillStyle = `rgba(${118 + r() * 30},${90 + r() * 20},${58 + r() * 14},${0.95 * al})`; g.fill();
+      g.strokeStyle = `rgba(20,12,5,${0.8 * al})`; g.lineWidth = Math.max(0.8, k * 0.012); g.stroke();
+      g.beginPath(); g.moveTo(-sz * 0.6, -sz * 0.5); g.lineTo(sz * 0.7, -sz * 0.6); g.strokeStyle = `rgba(236,214,170,${0.55 * al})`; g.stroke();
+      g.restore();
+    }
+    // short cracks running out from the rim
+    for (let i = 0; i < 6; i++) { const a = r() * TAU; strokeCrack(g, jag(r, Math.cos(a) * R * 0.66, Math.sin(a) * R * 0.66, a, R * (0.25 + r() * 0.2), 3, 0.6), W * 0.6, al, k); }
+  } else {
+    // 3 — the fault: two or three long rifts torn right through, wide and black at the middle, forking at the ends,
+    // and broken shards of crust lying on the edges
+    const n = 2 + Math.floor(r() * 2), a0 = r() * Math.PI;
+    for (let i = 0; i < n; i++) {
+      const a = a0 + (i / n) * Math.PI + (r() - 0.5) * 0.4;
+      for (const side of [0, Math.PI]) {
+        const pts = jag(r, 0, 0, a + side, R * (0.85 + r() * 0.2), 6, 0.45);
+        strokeCrack(g, pts, W * 1.6, al, k);
+        // forks
+        for (let j = 2; j < pts.length - 1; j += 2) if (r() < 0.75) strokeCrack(g, jag(r, pts[j][0], pts[j][1], a + side + (r() < 0.5 ? 0.8 : -0.8), R * (0.2 + r() * 0.15), 3, 0.6), W * 0.6, al, k);
+      }
+    }
+    // the gap at the middle where the crust has dropped
+    g.fillStyle = `rgba(10,6,2,${0.85 * al})`; g.beginPath();
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU, rr = R * (0.12 + r() * 0.08); g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    g.closePath(); g.fill();
+    for (let i = 0; i < 14; i++) {
+      const a = r() * TAU, d = R * (0.15 + r() * 0.7), sz = k * (0.025 + r() * 0.035);
+      g.save(); g.translate(Math.cos(a) * d, Math.sin(a) * d); g.rotate(r() * TAU);
+      g.beginPath(); g.moveTo(-sz, 0); g.lineTo(0, -sz * 0.8); g.lineTo(sz, sz * 0.2); g.lineTo(-sz * 0.2, sz * 0.7); g.closePath();
+      g.fillStyle = `rgba(104,80,50,${0.9 * al})`; g.fill(); g.strokeStyle = `rgba(20,12,5,${0.7 * al})`; g.lineWidth = Math.max(0.6, k * 0.008); g.stroke();
+      g.restore();
+    }
+  }
+  g.restore();
 }
 function drawStunStars(g, x, y, size, t) {
   for (let i = 0; i < 3; i++) {

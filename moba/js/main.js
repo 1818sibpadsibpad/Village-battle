@@ -1295,7 +1295,18 @@ for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) mini.addE
 
 // ---------- the loop ----------
 let last = performance.now(), menuT = 0;
+// one bad frame must never stop the game: the error is noted, the frame skipped, the loop goes on
+let frameErrs = 0;
 function frame(now) {
+  try { frameBody(now); }
+  catch (err) {
+    frameErrs++;
+    if (frameErrs < 4) console.error(err);
+    last = now;
+    requestAnimationFrame(frame);
+  }
+}
+function frameBody(now) {
   // the lower settings draw 30 frames a second
   if (GFX[gfx].fps < 60 && now - last < 1000 / GFX[gfx].fps - 5) { requestAnimationFrame(frame); return; }
   let dt = clamp((now - last) / 1000, 0, 0.05);
