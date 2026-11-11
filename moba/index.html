@@ -10,6 +10,7 @@
   :root { --gold: #e2be5c; --gold2: #f2d27a; --cream: #f4e6c0; --wood: #1b120b; --panel: rgba(24,16,9,0.78); --line: rgba(226,190,92,0.38);
           --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { position: fixed; inset: 0; width: 100%; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #120c07; color: var(--cream); font-family: Kanit, "Noto Sans Thai", "Leelawadee UI", Thonburi, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
   #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   button { font-family: inherit; color: inherit; cursor: pointer; }
@@ -328,6 +329,33 @@
   <div id="rot">หมุนจอเป็นแนวนอนจะเล่นถนัดกว่า</div>
 </div>
 
+<script>
+// no swipe, pull or edge gesture may close, reload or leave the page
+(function () {
+  const scroller = (el) => { for (; el && el !== document.body; el = el.parentElement) { const cs = getComputedStyle(el); if (/(auto|scroll)/.test(cs.overflowY + cs.overflowX) && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1)) return el; } return null; };
+  let sy = 0, sx = 0;
+  document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]; sy = t.clientY; sx = t.clientX;
+    // a touch hard against the left or right edge would start the browser's back/forward swipe
+    if (t.clientX < 24 || t.clientX > window.innerWidth - 24) { if (!e.target.closest('button, .sb, #mini, #joyZone, #joy, #hud, input')) e.preventDefault(); }
+  }, { passive: false });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) { e.preventDefault(); return; } // no pinch zoom
+    const sc = scroller(e.target);
+    if (!sc) { e.preventDefault(); return; }
+    // inside a list that scrolls: stop it pulling the page once it reaches its top or bottom
+    const t = e.touches[0], dy = t.clientY - sy, dx = t.clientX - sx;
+    if (Math.abs(dy) >= Math.abs(dx)) {
+      if ((dy > 0 && sc.scrollTop <= 0) || (dy < 0 && sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1)) e.preventDefault();
+    } else if ((dx > 0 && sc.scrollLeft <= 0) || (dx < 0 && sc.scrollLeft + sc.clientWidth >= sc.scrollWidth - 1)) e.preventDefault();
+  }, { passive: false });
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick', 'contextmenu']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  // the back gesture / back button: stay on the page
+  try { history.pushState({ stay: 1 }, ''); window.addEventListener('popstate', () => history.pushState({ stay: 1 }, '')); } catch (e) { /* sandboxed */ }
+  // leaving mid-battle: ask first
+  window.addEventListener('beforeunload', (e) => { if (window.state === 'game' || (typeof state !== 'undefined' && state === 'game')) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/world.js"></script>
