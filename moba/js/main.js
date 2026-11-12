@@ -577,7 +577,7 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (state !== 'game') {
     const open = !$('mapPick').classList.contains('hidden'), gopen = !$('gfxPick').classList.contains('hidden');
-    if (gopen) { if (e.key === 'Enter') pickGfx(gfx); else if (e.key === 'Escape') { $('gfxPick').classList.add('hidden'); openMapPick(); } else if (e.key >= '1' && e.key <= '4') pickGfx(+e.key - 1); return; }
+    if (gopen) { if (e.key === 'Enter') pickGfx(gfx); else if (e.key === 'Escape') { $('gfxPick').classList.add('hidden'); openMapPick(); } else if (e.key >= '1' && e.key <= '5') pickGfx(+e.key - 1); return; }
     if (e.key === 'Enter') { if (open) pickMap(mapKind); else openMapPick(); }
     else if (open && e.key === 'Escape') closeMapPick();
     else if (open && (e.key === '1' || e.key === '3')) pickMap(e.key === '3' ? 'big' : 'lane');
@@ -741,7 +741,7 @@ function gfxIcon(cv2, i) {
   const g = cv2.getContext('2d'), n = cv2.width;
   g.clearRect(0, 0, n, n);
   // a little landscape: sky, sun, hill, a palm; drawn coarser the lower the setting
-  const cell = [1, 2, 4, 12][i], m = n / cell;
+  const cell = [1, 2, 4, 12, 12][i], m = n / cell;
   const t = document.createElement('canvas'); t.width = t.height = Math.round(m); const q = t.getContext('2d'); q.scale(m / n, m / n);
   const sky = q.createLinearGradient(0, 0, 0, n); sky.addColorStop(0, '#5aa0d8'); sky.addColorStop(1, '#cfe6f0');
   q.fillStyle = sky; q.fillRect(0, 0, n, n);
@@ -751,6 +751,14 @@ function gfxIcon(cv2, i) {
   q.strokeStyle = '#7a5530'; q.lineWidth = n * 0.04; q.beginPath(); q.moveTo(n * 0.3, n * 0.86); q.quadraticCurveTo(n * 0.33, n * 0.6, n * 0.28, n * 0.38); q.stroke();
   q.strokeStyle = '#2f7a2a'; q.lineWidth = n * 0.035; q.lineCap = 'round';
   for (let k = 0; k < 6; k++) { const a = -Math.PI / 2 + (k - 2.5) * 0.55; q.beginPath(); q.moveTo(n * 0.28, n * 0.38); q.quadraticCurveTo(n * 0.28 + Math.cos(a) * n * 0.16, n * 0.38 + Math.sin(a) * n * 0.1, n * 0.28 + Math.cos(a) * n * 0.24, n * 0.38 + Math.sin(a) * n * 0.05 + n * 0.08); q.stroke(); }
+  if (i === 4) {
+    // the 3-bit icon: the same picture crushed to the eight tones, a little flame left in colour
+    const id = q.getImageData(0, 0, t.width, t.height), d = id.data;
+    for (let y = 0; y < t.height; y++) for (let x = 0; x < t.width; x++) { const j = (y * t.width + x) * 4, l = (d[j] * 0.3 + d[j + 1] * 0.59 + d[j + 2] * 0.11) / 255; const c = PAL3[Math.max(0, Math.min(7, Math.round(Math.pow(l, 0.85) * 7 + BAYER[(y & 3) * 4 + (x & 3)])))]; d[j] = c[0]; d[j + 1] = c[1]; d[j + 2] = c[2]; }
+    q.putImageData(id, 0, 0);
+    q.setTransform(1, 0, 0, 1, 0, 0); q.fillStyle = '#ff7a20'; q.fillRect(Math.round(t.width * 0.62), Math.round(t.height * 0.62), 1, 2); q.fillStyle = '#ffd35a'; q.fillRect(Math.round(t.width * 0.62), Math.round(t.height * 0.62) + 1, 1, 1);
+    q.fillStyle = '#c0141a'; q.fillRect(Math.round(t.width * 0.4), Math.round(t.height * 0.8), 1, 1);
+  }
   g.imageSmoothingEnabled = i < 3; g.drawImage(t, 0, 0, n, n);
   g.save(); g.globalCompositeOperation = 'destination-in'; g.beginPath(); g.arc(n / 2, n / 2, n / 2 - 1, 0, TAU); g.fill(); g.restore();
 }
@@ -944,8 +952,19 @@ function renderField(w, pl) {
   }
   items.sort((a, b) => a.y - b.y);
   for (const it of items) it.f();
+  if (GFX[gfx].bit3) {
+    // 3-bit: fog first, then the whole field crushed to eight dithered tones; the blows, the blood and the fire after, in colour
+    if (pl) { drawVision(g, w, pl, k, VS, true); screenTransform(g); }
+    crush3bit(g);
+    screenTransform(g);
+    drawLitFlames(g, w, k);
+    drawAirFx(g, w, k);
+    if (pl) drawFireGlow(g, k, VS, w.time);
+    screenTransform(g);
+  } else {
   drawAirFx(g, w, k);
   if (pl) { drawVision(g, w, pl, k, VS); screenTransform(g); }
+  }
   // how far the bow is drawn: a yellow bar over the archer's head
   if (pl && input.bowDraw && !pl.dead && heads.some(([a]) => a === pl)) {
     const h = heads.find(([a]) => a === pl)[1], f = bowCharge(pl);
@@ -1016,13 +1035,53 @@ function seenAmt(src, x, y) {
 // beyond sight: the field goes soft and dark, a night-blue shadow and a thin mist over it
 let fogCv = null, fogG = null, tinyCv = null, tinyG = null;
 let fogTick = 0, fogFresh = true;
-function drawVision(g, w, pl, k, VS) {
+// eight tones from near-black to moonlit pale, picked by brightness through a 4x4 Bayer dither
+const PAL3 = [[8, 10, 16], [18, 24, 34], [30, 44, 52], [48, 66, 70], [74, 96, 92], [108, 128, 116], [150, 166, 146], [206, 214, 190]];
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16 - 0.5);
+function crush3bit(g) {
+  const W = cv.width, H = cv.height;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  for (let y = 0; y < H; y++) {
+    const row = (y & 3) * 4;
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const l = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) / 255;
+      // a gentle curve so the midtones spread over the steps
+      // stretched: the night field sits low, so its range is spread over all eight steps and figures stand out
+      let q = Math.round(((l - 0.06) / 0.55) * 7 + BAYER[row + (x & 3)]);
+      q = q < 0 ? 0 : q > 7 ? 7 : q;
+      const c = PAL3[q];
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
+    }
+  }
+  g.putImageData(img, 0, 0);
+  g.restore();
+}
+// fire keeps its colour through the 3-bit crush: the arrows burning where they fell, and men on fire
+function drawLitFlames(g, w, k) {
+  for (const p of w.proj) {
+    if (!p.fire || p.hidden || (p.state !== 'fly' && !(p.lit && p.t < FIRE_LIGHT_T))) continue;
+    const [sx, sy] = w2s(p.x, p.y), z = p.state === 'stuck' ? (p.sz || 0.3) : p.z || 0.3;
+    g.save(); g.globalCompositeOperation = 'lighter'; g.translate(sx, sy - z * k); g.rotate(-Math.PI / 2);
+    drawFlame(g, 0, 0, k * 0.05, k * 0.16 * (0.85 + 0.15 * Math.sin(w.time * 40 + p.x)), w.time * 30);
+    g.restore();
+  }
+  for (const a of w.actors) {
+    if (!a.burn || typeof a.burn !== 'object' || a.dead) continue;
+    const [sx, sy] = w2s(a.x, a.y), s = k * (a.hero ? a.hero.size : 0.36);
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) { g.save(); g.translate(sx + (i - 1) * s * 0.18, sy - s * (0.55 + 0.2 * (i % 2))); g.rotate(-Math.PI / 2); drawFlame(g, 0, 0, s * 0.09, s * 0.32, w.time * 30 + i * 5); g.restore(); }
+    g.restore();
+  }
+}
+function drawVision(g, w, pl, k, VS, noGlow) {
   const W = cv.width, H = cv.height;
   // the whole screen inside your own sight: no fog to draw, only the fire glow
   const [cx0, cy0] = s2w(0, 0), [cx1, cy1] = s2w(cam.vw, cam.vh);
   const R0 = VISION;
   const allIn = [[cx0, cy0], [cx1, cy0], [cx0, cy1], [cx1, cy1]].every(([x, y]) => Math.hypot(x - pl.x, y - pl.y) < R0);
-  if (allIn) { drawFireGlow(g, k, VS, w.time); return; }
+  if (allIn) { if (!noGlow) drawFireGlow(g, k, VS, w.time); return; }
   const fw = Math.ceil(W / 3), fh = Math.ceil(H / 3), tw = Math.max(8, Math.ceil(W / 9)), th = Math.max(8, Math.ceil(H / 9));
   if (!fogCv || fogCv.width !== fw || fogCv.height !== fh) { fogCv = document.createElement('canvas'); fogCv.width = fw; fogCv.height = fh; fogG = fogCv.getContext('2d'); }
   if (!tinyCv || tinyCv.width !== tw || tinyCv.height !== th) { fogFresh = true; tinyCv = document.createElement('canvas'); tinyCv.width = tw; tinyCv.height = th; tinyG = tinyCv.getContext('2d'); }
@@ -1065,7 +1124,7 @@ function drawVision(g, w, pl, k, VS) {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.drawImage(fogCv, 0, 0, W, H);
   g.restore();
-  drawFireGlow(g, k, VS, t);
+  if (!noGlow) drawFireGlow(g, k, VS, t);
 }
 // the fire arrows' warm glow on the ground
 function drawFireGlow(g, k, VS, t) {

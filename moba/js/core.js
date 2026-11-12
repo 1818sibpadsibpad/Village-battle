@@ -1,6 +1,6 @@
 'use strict';
 // shown on the menu; raised with every update
-const GAME_VERSION = '1.45';
+const GAME_VERSION = '1.46';
 // ===== ศึกหมู่บ้าน MOBA — core: utilities, constants, heroes =====
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -27,6 +27,8 @@ const GFX = [
   { id: 'mid', name: 'ปกติ', short: 'ปกติ', dpr: 2, fps: 60, refl: true, blur: true },
   { id: 'eco', name: 'ประหยัดแบต', short: 'ประหยัด', dpr: 1.25, fps: 30, refl: false, blur: false },
   { id: 'px', name: 'ไมโครพิกเซล', short: 'พิกเซล', pixel: true, fps: 30, refl: false, blur: false },
+  // 3-bit: eight dark tones, dithered; only fire, blood and the flash of a blow keep their colour
+  { id: 'b3', name: '3 บิต', short: '3บิต', pixel: true, bit3: true, fps: 30, refl: false, blur: false },
 ];
 let gfx = 1;
 try { const v = parseInt(localStorage.getItem('sb_gfx'), 10); if (v >= 0 && v < GFX.length) gfx = v; } catch (e) { /* no storage */ }

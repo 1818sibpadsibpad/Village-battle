@@ -18,6 +18,17 @@ function shadowSprite() {
 function drawShadow(g, x, y, rx, ry, a = 1) {
   if (a <= 0.01) return;
   const ga = g.globalAlpha;
+  if (GFX[gfx].bit3) {
+    // 3-bit: a hard contact shadow underfoot, and a long one thrown back by a low moon
+    g.globalAlpha = ga * Math.min(1, a * 1.5);
+    g.drawImage(shadowSprite(), x - rx * 0.9, y - ry * 0.9, rx * 1.8, ry * 1.8);
+    g.globalAlpha = ga * Math.min(1, a * 1.1);
+    g.save(); g.translate(x, y); g.transform(1, 0, -0.9, 1, 0, 0);
+    g.drawImage(shadowSprite(), -rx * 0.55, -ry * 3.4, rx * 1.5, ry * 3.6);
+    g.restore();
+    g.globalAlpha = ga;
+    return;
+  }
   g.globalAlpha = ga * a;
   g.drawImage(shadowSprite(), x - rx, y - ry, rx * 2, ry * 2);
   g.globalAlpha = ga;
